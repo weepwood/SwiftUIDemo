@@ -142,11 +142,6 @@ jobs:
           PRERELEASE: ${{ steps.meta.outputs.prerelease }}
         shell: bash
         run: |
-          if [[ "$RELEASE_TAG" == "nightly" ]]; then
-            git tag -f nightly "$GITHUB_SHA"
-            git push origin refs/tags/nightly --force
-          fi
-
           ASSETS=(release/*.zip release/*.dmg release/SHA256SUMS.txt)
           for asset in "${ASSETS[@]}"; do
             test -f "$asset"
@@ -169,4 +164,9 @@ jobs:
               CREATE_ARGS+=(--latest)
             fi
             gh release create "$RELEASE_TAG" "${ASSETS[@]}" "${CREATE_ARGS[@]}"
+          fi
+
+          if [[ "$RELEASE_TAG" == "nightly" ]]; then
+            git tag -f nightly "$GITHUB_SHA"
+            git push origin refs/tags/nightly --force
           fi
