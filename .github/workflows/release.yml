@@ -130,7 +130,7 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          scripts/package-app.sh \
+          bash scripts/package-app.sh \
             "${{ steps.meta.outputs.version }}" \
             "${GITHUB_RUN_NUMBER}" \
             "artifacts/arm64/SwiftUIDemo" \
