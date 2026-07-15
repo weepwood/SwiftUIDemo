@@ -5,6 +5,13 @@ on:
     branches: [main]
     tags:
       - "v*"
+  pull_request:
+    paths:
+      - "Package.swift"
+      - "Sources/**"
+      - "Packaging/**"
+      - "scripts/**"
+      - ".github/workflows/release.yml"
   workflow_dispatch:
     inputs:
       version:
@@ -94,6 +101,11 @@ jobs:
             RELEASE_TAG="v$VERSION"
             RELEASE_NAME="SwiftUIDemo v$VERSION"
             PRERELEASE="false"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            VERSION="0.0.0-pr${{ github.event.number }}"
+            RELEASE_TAG=""
+            RELEASE_NAME="Packaging validation"
+            PRERELEASE="true"
           else
             VERSION="0.0.${GITHUB_RUN_NUMBER}"
             RELEASE_TAG="nightly"
@@ -135,6 +147,7 @@ jobs:
           retention-days: 14
 
       - name: Publish GitHub Release
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.meta.outputs.tag }}
