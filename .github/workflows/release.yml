@@ -147,23 +147,26 @@ jobs:
             git push origin refs/tags/nightly --force
           fi
 
-          mapfile -t ASSETS < <(find release -maxdepth 1 -type f \( -name '*.zip' -o -name '*.dmg' -o -name 'SHA256SUMS.txt' \) -print)
+          ASSETS=(release/*.zip release/*.dmg release/SHA256SUMS.txt)
+          for asset in "${ASSETS[@]}"; do
+            test -f "$asset"
+          done
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release edit "$RELEASE_TAG" \
-              --title "$RELEASE_NAME" \
-              $([[ "$PRERELEASE" == "true" ]] && echo "--prerelease" || echo "--latest")
+            EDIT_ARGS=(--title "$RELEASE_NAME")
+            if [[ "$PRERELEASE" == "true" ]]; then
+              EDIT_ARGS+=(--prerelease)
+            else
+              EDIT_ARGS+=(--latest)
+            fi
+            gh release edit "$RELEASE_TAG" "${EDIT_ARGS[@]}"
             gh release upload "$RELEASE_TAG" "${ASSETS[@]}" --clobber
           else
-            EXTRA_ARGS=()
+            CREATE_ARGS=(--target "$GITHUB_SHA" --title "$RELEASE_NAME" --generate-notes)
             if [[ "$PRERELEASE" == "true" ]]; then
-              EXTRA_ARGS+=(--prerelease)
+              CREATE_ARGS+=(--prerelease)
             else
-              EXTRA_ARGS+=(--latest)
+              CREATE_ARGS+=(--latest)
             fi
-            gh release create "$RELEASE_TAG" "${ASSETS[@]}" \
-              --target "$GITHUB_SHA" \
-              --title "$RELEASE_NAME" \
-              --generate-notes \
-              "${EXTRA_ARGS[@]}"
+            gh release create "$RELEASE_TAG" "${ASSETS[@]}" "${CREATE_ARGS[@]}"
           fi
