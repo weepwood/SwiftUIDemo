@@ -1,0 +1,169 @@
+name: Release macOS
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "发布版本，例如 1.0.0"
+        required: true
+        default: "1.0.0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release binary
+        run: swift build -c release
+
+      - name: Collect binary
+        run: |
+          BIN_PATH="$(swift build -c release --show-bin-path)/SwiftUIDemo"
+          test -x "$BIN_PATH"
+          mkdir -p artifact
+          cp "$BIN_PATH" artifact/SwiftUIDemo
+          strip -x artifact/SwiftUIDemo || true
+          file artifact/SwiftUIDemo
+
+      - name: Upload architecture binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.arch }}
+          path: artifact/SwiftUIDemo
+          if-no-files-found: error
+          retention-days: 3
+
+  package-and-release:
+    name: Package Universal app
+    needs: build
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download arm64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-arm64
+          path: artifacts/arm64
+
+      - name: Download x86_64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-x86_64
+          path: artifacts/x86_64
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            RELEASE_TAG="$GITHUB_REF_NAME"
+            RELEASE_NAME="SwiftUIDemo $GITHUB_REF_NAME"
+            PRERELEASE="false"
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+            VERSION="${VERSION#v}"
+            RELEASE_TAG="v$VERSION"
+            RELEASE_NAME="SwiftUIDemo v$VERSION"
+            PRERELEASE="false"
+          else
+            VERSION="0.0.${GITHUB_RUN_NUMBER}"
+            RELEASE_TAG="nightly"
+            RELEASE_NAME="SwiftUIDemo Nightly #${GITHUB_RUN_NUMBER}"
+            PRERELEASE="true"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Build app bundle, ZIP and DMG
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          scripts/package-app.sh \
+            "${{ steps.meta.outputs.version }}" \
+            "${GITHUB_RUN_NUMBER}" \
+            "artifacts/arm64/SwiftUIDemo" \
+            "artifacts/x86_64/SwiftUIDemo" \
+            "release"
+
+      - name: Upload packaged artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftUIDemo-${{ steps.meta.outputs.version }}-universal
+          path: |
+            release/*.zip
+            release/*.dmg
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          RELEASE_NAME: ${{ steps.meta.outputs.name }}
+          PRERELEASE: ${{ steps.meta.outputs.prerelease }}
+        shell: bash
+        run: |
+          if [[ "$RELEASE_TAG" == "nightly" ]]; then
+            git tag -f nightly "$GITHUB_SHA"
+            git push origin refs/tags/nightly --force
+          fi
+
+          mapfile -t ASSETS < <(find release -maxdepth 1 -type f \( -name '*.zip' -o -name '*.dmg' -o -name 'SHA256SUMS.txt' \) -print)
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --title "$RELEASE_NAME" \
+              $([[ "$PRERELEASE" == "true" ]] && echo "--prerelease" || echo "--latest")
+            gh release upload "$RELEASE_TAG" "${ASSETS[@]}" --clobber
+          else
+            EXTRA_ARGS=()
+            if [[ "$PRERELEASE" == "true" ]]; then
+              EXTRA_ARGS+=(--prerelease)
+            else
+              EXTRA_ARGS+=(--latest)
+            fi
+            gh release create "$RELEASE_TAG" "${ASSETS[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_NAME" \
+              --generate-notes \
+              "${EXTRA_ARGS[@]}"
+          fi
