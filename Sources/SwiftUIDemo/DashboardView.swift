@@ -45,7 +45,7 @@ struct DashboardView: View {
         HStack(spacing: 20) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(.tint.gradient)
+                    .fill(Color.accentColor.gradient)
                     .frame(width: 94, height: 94)
 
                 Image(systemName: "swift")
@@ -96,7 +96,7 @@ struct DashboardView: View {
                     HStack(spacing: 12) {
                         Image(systemName: item.symbol)
                             .frame(width: 28, height: 28)
-                            .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                             .foregroundStyle(.tint)
 
                         VStack(alignment: .leading, spacing: 2) {
