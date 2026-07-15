@@ -108,7 +108,7 @@ struct DataGalleryView: View {
                             x: .value("日期", point.date, unit: .day),
                             y: .value("请求数", point.requests)
                         )
-                        .foregroundStyle(.tint.gradient)
+                        .foregroundStyle(Color.accentColor.gradient)
                         .cornerRadius(4)
                     case .latency:
                         LineMark(
@@ -123,7 +123,7 @@ struct DataGalleryView: View {
                             x: .value("日期", point.date, unit: .day),
                             y: .value("延迟", point.latency)
                         )
-                        .foregroundStyle(.tint.opacity(0.12).gradient)
+                        .foregroundStyle(Color.accentColor.opacity(0.12).gradient)
                         .interpolationMethod(.catmullRom)
                     }
                 }
