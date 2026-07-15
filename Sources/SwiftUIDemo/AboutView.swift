@@ -17,7 +17,7 @@ struct AboutView: View {
             VStack(spacing: 20) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(.tint.gradient)
+                        .fill(Color.accentColor.gradient)
                         .frame(width: 112, height: 112)
                     Image(systemName: "swift")
                         .font(.system(size: 56, weight: .semibold))
