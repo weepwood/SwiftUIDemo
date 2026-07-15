@@ -119,6 +119,8 @@ jobs:
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
 
       - name: Build app bundle, ZIP and DMG
+        id: package
+        continue-on-error: true
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -133,9 +135,25 @@ jobs:
             "${GITHUB_RUN_NUMBER}" \
             "artifacts/arm64/SwiftUIDemo" \
             "artifacts/x86_64/SwiftUIDemo" \
-            "release"
+            "release" > package.log 2>&1
+
+      - name: Upload package log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-log
+          path: package.log
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Report package failure
+        if: steps.package.outcome == 'failure'
+        run: |
+          tail -n 160 package.log
+          exit 1
 
       - name: Upload packaged artifacts
+        if: steps.package.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: SwiftUIDemo-${{ steps.meta.outputs.version }}-universal
@@ -147,7 +165,7 @@ jobs:
           retention-days: 14
 
       - name: Publish GitHub Release
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && steps.package.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.meta.outputs.tag }}
