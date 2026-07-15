@@ -38,7 +38,25 @@ jobs:
         run: swift package resolve
 
       - name: Build release binary
-        run: swift build -c release
+        id: build
+        continue-on-error: true
+        run: swift build -c release > build.log 2>&1
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.arch }}
+          path: build.log
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Run tests
+        if: steps.build.outcome == 'success'
         run: swift test --parallel
+
+      - name: Report build failure
+        if: steps.build.outcome == 'failure'
+        run: |
+          tail -n 120 build.log
+          exit 1
