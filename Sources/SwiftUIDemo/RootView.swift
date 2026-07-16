@@ -60,7 +60,7 @@ struct RootView: View {
                 Label("macOS 14+", systemImage: "desktopcomputer")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("纯 SwiftUI · 无第三方依赖")
+                Text("Liquid Glass on macOS 26+")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -76,6 +76,8 @@ struct RootView: View {
             DashboardView()
         case .controls:
             ControlsGalleryView()
+        case .liquidGlass:
+            LiquidGlassGalleryView()
         case .data:
             DataGalleryView()
         case .system:
@@ -104,8 +106,13 @@ private struct InspectorView: View {
                 LabeledContent("检查器", value: model.isInspectorPresented ? "已显示" : "已隐藏")
             }
 
+            Section("设计系统") {
+                LabeledContent("最低版本", value: "macOS 14")
+                LabeledContent("Liquid Glass", value: "macOS 26+")
+            }
+
             Section("提示") {
-                Text("此检查器使用 macOS 原生 Inspector API，可随窗口宽度自动折叠。")
+                Text("此检查器使用 macOS 原生 Inspector API。使用 Xcode 26 SDK 构建后，侧边栏、工具栏和检查器会自动采用 Liquid Glass 系统设计。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
