@@ -16,7 +16,7 @@ struct DashboardView: View {
                 hero
 
                 LazyVGrid(columns: columns, spacing: 14) {
-                    MetricCard(title: "原生页面", value: "5", detail: "Split View 与 Inspector", symbol: "macwindow")
+                    MetricCard(title: "原生页面", value: "6", detail: "包含 Liquid Glass 专页", symbol: "macwindow")
                     MetricCard(title: "示例记录", value: "\(model.records.count)", detail: "Table、搜索与排序", symbol: "tablecells")
                     MetricCard(title: "系统集成", value: "6", detail: "文件、通知、剪贴板", symbol: "puzzlepiece.extension")
                     MetricCard(title: "外部依赖", value: "0", detail: "完全使用 Apple 框架", symbol: "checkmark.seal")
@@ -35,7 +35,9 @@ struct DashboardView: View {
             }
             .padding(24)
         }
-        .background(.background.secondary)
+        .background {
+            DashboardBackdrop()
+        }
         .sheet(isPresented: $isWelcomePresented) {
             WelcomeSheet()
         }
@@ -58,14 +60,14 @@ struct DashboardView: View {
                 Text("探索 macOS 原生体验")
                     .font(.system(size: 30, weight: .bold, design: .rounded))
 
-                Text("一个集中展示 SwiftUI 控件、数据视图、系统集成、窗口管理与设置场景的功能型示例应用。")
+                Text("集中展示 SwiftUI 控件、Liquid Glass、数据视图、系统集成、窗口管理与设置场景。")
                     .font(.title3)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 10) {
-                    Button("开始浏览") {
-                        model.selectedSection = .controls
+                    Button("体验液态玻璃") {
+                        model.selectedSection = .liquidGlass
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
@@ -82,11 +84,7 @@ struct DashboardView: View {
             Spacer(minLength: 0)
         }
         .padding(24)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(.separator.opacity(0.45), lineWidth: 1)
-        }
+        .adaptiveGlass(cornerRadius: 20)
     }
 
     private var activityCard: some View {
@@ -128,6 +126,9 @@ struct DashboardView: View {
     private var quickActionsCard: some View {
         GroupBox("快捷操作") {
             VStack(spacing: 10) {
+                ActionRow(title: "体验 Liquid Glass", subtitle: "玻璃样式、按钮与流体过渡", symbol: "drop.fill") {
+                    model.selectedSection = .liquidGlass
+                }
                 ActionRow(title: "打开控件画廊", subtitle: "浏览按钮、输入框和选择器", symbol: "switch.2") {
                     model.selectedSection = .controls
                 }
@@ -226,13 +227,13 @@ private struct WelcomeSheet: View {
             Text("SwiftUI Demo")
                 .font(.largeTitle.bold())
 
-            Text("此项目用于展示现代 macOS 应用的常见原生能力。所有页面均可直接阅读、修改和复用。")
+            Text("此项目展示现代 macOS 原生能力，并在 macOS 26+ 上启用 Liquid Glass。所有页面均可直接阅读、修改和复用。")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 440)
 
             HStack(spacing: 18) {
-                Label("NavigationSplitView", systemImage: "sidebar.left")
+                Label("Liquid Glass", systemImage: "drop.fill")
                 Label("Swift Charts", systemImage: "chart.xyaxis.line")
                 Label("System APIs", systemImage: "gearshape.2")
             }
@@ -247,5 +248,30 @@ private struct WelcomeSheet: View {
         }
         .padding(36)
         .frame(width: 560, height: 340)
+    }
+}
+
+private struct DashboardBackdrop: View {
+    var body: some View {
+        ZStack {
+            Color(nsColor: .windowBackgroundColor)
+
+            LinearGradient(
+                colors: [
+                    Color.accentColor.opacity(0.12),
+                    .clear,
+                    .purple.opacity(0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Circle()
+                .fill(Color.accentColor.opacity(0.13))
+                .frame(width: 360, height: 360)
+                .blur(radius: 84)
+                .offset(x: -360, y: -260)
+        }
+        .ignoresSafeArea()
     }
 }

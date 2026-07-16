@@ -78,6 +78,7 @@ struct ChartPoint: Identifiable, Hashable {
 enum DemoSection: String, CaseIterable, Identifiable {
     case overview
     case controls
+    case liquidGlass
     case data
     case system
     case about
@@ -88,6 +89,7 @@ enum DemoSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "概览"
         case .controls: "原生控件"
+        case .liquidGlass: "液态玻璃"
         case .data: "数据与图表"
         case .system: "系统能力"
         case .about: "关于应用"
@@ -98,6 +100,7 @@ enum DemoSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "rectangle.3.group"
         case .controls: "switch.2"
+        case .liquidGlass: "drop.fill"
         case .data: "chart.xyaxis.line"
         case .system: "macwindow.on.rectangle"
         case .about: "info.circle"
