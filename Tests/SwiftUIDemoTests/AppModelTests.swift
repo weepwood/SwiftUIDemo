@@ -23,6 +23,12 @@ final class AppModelTests: XCTestCase {
         XCTAssertTrue(record.matches(query: "   "))
     }
 
+    func testLiquidGlassSectionMetadata() {
+        XCTAssertTrue(DemoSection.allCases.contains(.liquidGlass))
+        XCTAssertEqual(DemoSection.liquidGlass.title, "液态玻璃")
+        XCTAssertEqual(DemoSection.liquidGlass.symbol, "drop.fill")
+    }
+
     @MainActor
     func testResetDemoDataRestoresSamples() {
         let model = AppModel()
